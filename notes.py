@@ -31,8 +31,15 @@ import datetime
 import random
 
 def load_notes():
-    with open("notes.json", "r", encoding="utf-8") as notes_json:
-        return json.load(notes_json)
+    try:
+        with open("notes.json", "r", encoding="utf-8") as notes_json:
+            return json.load(notes_json)
+    except:
+        with open("notes.json", "w", encoding="utf-8") as notes_json:
+            notes_json.write(json.dumps(notes, ensure_ascii=False))
+        with open("notes.json", "r", encoding="utf-8") as notes_json:
+            return json.load(notes_json)
+
 
 def save_changes(notes_to_save):
     with open("notes.json", "w", encoding="utf-8") as notes_json:
@@ -42,50 +49,98 @@ def save_changes(notes_to_save):
     return notes_to_save
 
 def new_note(notes_to_supplement):
-    find_previous_id_list = notes_to_supplement.keys()
-    id = len(find_previous_id_list) + 1
-    notes_to_supplement[id] = {}
+    if len(notes_to_supplement)!= 0:
+        if notes_to_supplement[len(notes_to_supplement)-1][0]:
+            id = str(int(notes_to_supplement[len(notes_to_supplement)-1][0]) + 1)
+    else:
+        id = 1
     title = input("Введите заголовок заметки:")
-    notes_to_supplement[id]["Заголовок"] = title
     body = input("Введите текст заметки: ")
-    notes_to_supplement[id]["Тело заметки"] = body
-    date_of_creation = datetime.datetime.now()
-    date_of_creation_str = date_of_creation.strftime("%Y-%m-%d %H:%M:%S") 
-    notes_to_supplement[id]["Дата создания"] = date_of_creation_str
-    notes_to_supplement[id]["Дата изменения"] = date_of_creation_str
+    date_of_change = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") 
+    new_note = [id, title, body, date_of_change]
+    notes_to_supplement.append(new_note)
     save_changes(notes_to_supplement)
     print("Новая заметка успешно создана!")
     return notes_to_supplement
     
 def show_notes():
-    print(load_notes())
+    notes = load_notes()
+    for i in range(len(notes)):
+        print(f"ID заметки: {notes[i][0]}\nЗаголовок: {notes[i][1]}\nСодержание: {notes[i][2]}\nДата изменения: {notes[i][3]}\n") 
 
 def edit_note(notes_to_edit):
     id_to_edit = input('Введите ID заметки, которую вы хотите отредактировать: ')
+    try:
+        for i in range(len(notes_to_edit)):
+            if id_to_edit == notes_to_edit[i][0]:
+                remember_i = i
+                break
+    except:
+        print("Не удалось найти заметку с таким ID")
+    
     title = input("Введите новый заголовок заметки:")
-    notes_to_edit[id_to_edit]["Заголовок"] = title
     body = input("Введите новый текст заметки: ")
-    notes_to_edit[id_to_edit]["Тело заметки"] = body
-    notes_to_edit[id_to_edit]["Дата изменения"] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    date_of_change = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    notes_to_edit[remember_i] = [id_to_edit, title, body, date_of_change]
     save_changes(notes_to_edit)
     print("Заметка успешно изменена!")
     return notes_to_edit
 
 def remove_note(notes_to_remove_in):
-    note_to_remove = input('Введите ID заметки, которую вы хотите удалить: ')
-    del notes_to_remove_in[note_to_remove]
+    id_of_note_to_remove = input('Введите ID заметки, которую вы хотите удалить: ')
+    for i in range(len(notes_to_remove_in)):
+        note = notes_to_remove_in[i]
+        if note[0] == id_of_note_to_remove:
+            notes_to_remove_in.remove(notes_to_remove_in[i])
+            break
     save_changes(notes_to_remove_in)
     print('Вы успешно удалили заметку')
     return notes_to_remove_in
 
+def sort_notes(notes_to_sort):
+    dates = list()
+    for i in range(len(notes_to_sort)):
+        dates.append(notes_to_sort[i][3])
+    how_to_sort = int(input("Введите 1, если хотите отсортировать заметки от самой новой к самой старой.\n"+
+                            "Введите 2, если хотите отсортировать заметки от самой старой к самой новой.\n"+
+                            "Номер вашего выбора: "))
+    try:
+        if how_to_sort == 1:
+            dates_sorted = sorted(dates, reverse=True)         
+        elif how_to_sort == 2:
+            dates_sorted = sorted(dates, reverse=False)
+        for i in range(len(dates_sorted)):
+                for j in range(len(notes_to_sort)):
+                    if dates_sorted[i] == notes_to_sort[j][3]:
+                        remember_me = notes_to_sort[i]
+                        notes_to_sort[i] = notes_to_sort[j]
+                        notes_to_sort[j] = remember_me           
+                save_changes(notes_to_sort)
+                return notes_to_sort 
+    except:
+        print("Ошибка ввода, для стабильного продолжения работы программа сортирует заметки по умолчанию.\n")
+        
+    
+
+
 id = 1
-notes = {id: {"Заголовок": "Покупки", "Тело заметки": "Молоко, яйца, корень имбиря, лимон, кошачьи пакетики, что-нибудь к чаю", "Дата создания": "2023-10-30 18:02:57", "Дата изменения": "2023-10-30 18:02:57"}}
+notes = [["1", "Покупки", "Молоко, яйца, корень имбиря, лимон, кошачьи пакетики, что-нибудь к чаю", "2022-11-29 18:02:57"], 
+         ["2", "Кино для просмотра", "Бункер, Как приручить дракона 2, Притворись моей женой", "2021-10-30 15:07:51"],
+         ["3", "ВАЖНО", "Отвезти кота к ветеринару в 12.00 завтра, клиника Кит, Сходня", "2023-10-31 01:12:52"],
+         ["4", "не забудь про дверь", "Дождаться звонка от установщиков двери, договориться о дате", "2023-10-30 09:44:52"]]
 
 while True:
     notes = load_notes()
     command = input("Введите команду:")
     if command == "/start":
-        print("Добро пожаловать в приложение 'Ваши заметки'!")
+        print("Добро пожаловать в приложение 'Ваши заметки'!\n")
+        print("Вы можете использовать следующие команды: \n"+ 
+                "/all - для показа всех заметок\n"+
+                "/add - для добавления новой заметки\n" +
+                "/edit - для изменения вашей заметки\n" +
+                "/remove - для удаления вашей заметки\n" + 
+                "/sort - для сортировки ваших заметок по дате\n" +
+                "/stop - для выхода из приложения\n")
     elif command == "/stop":
         save_changes(notes)
         print("Вы закрыли приложение. До новых встреч!")
@@ -98,5 +153,8 @@ while True:
         edit_note(notes)
     elif command == "/remove":
         remove_note(notes)
+    elif command == "/sort":
+        sort_notes(notes)
+        show_notes()
     else:
         print('Ошибка ввода. Попробуйте снова.')
